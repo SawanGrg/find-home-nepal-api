@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  find-home:
+    build: .
+    image: find-home-nepal-image
+    container_name: find-home-nepal-container
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.dev
+    volumes:
+      # Mount certificates and keys from host machine read-only
+      - ./certs:/app/certs:ro
+      - ./logs:/app/logs:ro
+
+
+      # For file uploads and other persistent data
+      - ./uploads:/app/uploads:ro
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=dev
+#      - DB_HOST=${DB_HOST:-host.docker.internal}
+##      - REDIS_HOST=${REDIS_HOST:-host.docker.internal}
+    extra_hosts:
+      - "host.docker.internal:host-gateway" # Required for Linux to access host services
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped

@@ -1,0 +1,77 @@
+# =========================
+# Build artifacts
+# =========================
+target/
+build/
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# =========================
+# Environment & secrets
+# =========================
+.env*
+*.env
+
+# Optional local-only Spring configs
+application-*.local.yaml
+
+# =========================
+# Logs & runtime files
+# =========================
+logs/
+*.log
+
+# =========================
+# Uploads (user-generated content)
+# =========================
+uploads/
+
+# =========================
+# IntelliJ IDEA
+# =========================
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# =========================
+# VS Code
+# =========================
+.vscode/
+
+# =========================
+# Eclipse / STS
+# =========================
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# =========================
+# NetBeans
+# =========================
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Maven wrapper (keep this)
+# =========================
+!.mvn/wrapper/maven-wrapper.jar
+
+application.yaml
+application-dev.yaml
+.env.dev
+.env.prod
+.env

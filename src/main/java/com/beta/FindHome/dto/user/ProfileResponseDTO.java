@@ -1,0 +1,32 @@
+package com.beta.FindHome.dto.user;
+import com.beta.FindHome.enums.model.Gender;
+import com.beta.FindHome.enums.model.MaritalStatus;
+import com.beta.FindHome.enums.model.RoleStatus;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.*;
+
+import java.time.LocalDate;
+import java.util.UUID;
+
+@Getter
+@Setter
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ProfileResponseDTO {
+    private UUID id;
+    private String firstName;
+    private String middleName;
+    private String lastName;
+    private String userName;
+    private String email;
+    private String phoneNumber;
+    private String profilePicture;
+    private String citizenshipFront;
+    private String citizenshipBack;
+    private LocalDate dob;
+    private Gender userGender;
+    private MaritalStatus maritalStatus;
+    private RoleStatus roleStatus;
+    private Boolean isVerified;
+    private String createdAt;
+    
+}
