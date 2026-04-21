@@ -1,5 +1,8 @@
 package com.beta.FindHome.dto.property;
 
+import com.beta.FindHome.dto.common.amenities.AmenitiesDTO;
+import com.beta.FindHome.dto.common.area.AreaDTO;
+import com.beta.FindHome.dto.common.assets.AssetDTO;
 import com.beta.FindHome.enums.model.Furnish;
 import com.beta.FindHome.model.Amenities;
 import com.beta.FindHome.model.Area;
@@ -45,13 +48,13 @@ public class GetAllPropertyResponseDTO {
     private Integer flatLivingRoom;
 
     // Amenities (common for all entities)
-    private Amenities amenities;
+    private AmenitiesDTO amenities;
 
     // Area (common for all entities)
-    private Area area;
+    private AreaDTO area;
 
     // Assets (common for all entities)
-    private List<Assets> assets;
+    private List<AssetDTO> assets;
 
     private LocalDateTime createdAt;
 }

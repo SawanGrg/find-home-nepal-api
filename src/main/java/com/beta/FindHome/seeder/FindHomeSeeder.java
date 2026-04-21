@@ -3,6 +3,7 @@ package com.beta.FindHome.seeder;
 import com.beta.FindHome.enums.model.Gender;
 import com.beta.FindHome.enums.model.MaritalStatus;
 import com.beta.FindHome.enums.model.RoleStatus;
+import com.beta.FindHome.enums.model.OwnerRegistrationStatusType; // ✅ NEW
 import com.beta.FindHome.model.*;
 import com.beta.FindHome.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ public class FindHomeSeeder {
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final OwnerRegistrationStatusRepository ownerRegistrationStatusRepository;
     private final PasswordEncoder passwordEncoder;
     private final HouseRepository houseRepository;
     private final AmenitiesRepository amenitiesRepository;
@@ -37,6 +39,7 @@ public class FindHomeSeeder {
     public FindHomeSeeder(
             UserRepository userRepository,
             RoleRepository roleRepository,
+            OwnerRegistrationStatusRepository ownerRegistrationStatusRepository,
             PasswordEncoder passwordEncoder,
             HouseRepository houseRepository,
             AmenitiesRepository amenitiesRepository,
@@ -45,6 +48,7 @@ public class FindHomeSeeder {
     ) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
+        this.ownerRegistrationStatusRepository = ownerRegistrationStatusRepository;
         this.passwordEncoder = passwordEncoder;
         this.houseRepository = houseRepository;
         this.amenitiesRepository = amenitiesRepository;
@@ -127,8 +131,31 @@ public class FindHomeSeeder {
                 .roles(Collections.singleton(role))
                 .build();
 
-        userRepository.save(user);
+        Users savedUser = userRepository.save(user);
         System.out.println("Created user: " + email);
+
+        if ("OWNER".equals(roleName)) {
+            createOwnerStatusIfNotExists(savedUser);
+        }
+    }
+
+    // =====================================================================
+    // OWNER STATUS
+    // =====================================================================
+
+    private void createOwnerStatusIfNotExists(Users user) {
+        if (ownerRegistrationStatusRepository.findByUser(user).isPresent()) {
+            return;
+        }
+
+        OwnerRegistrationStatus status = new OwnerRegistrationStatus();
+        status.setUser(user);
+        status.setStatus(OwnerRegistrationStatusType.APPROVED);
+        status.setMessage("Auto-approved (dev seeder)");
+
+        ownerRegistrationStatusRepository.save(status);
+
+        System.out.println("Created OWNER registration status for: " + user.getEmail());
     }
 
     // =====================================================================
@@ -150,22 +177,16 @@ public class FindHomeSeeder {
                 Users freshLandlord = userRepository.findById(landlord.getId())
                         .orElseThrow(() -> new RuntimeException("Landlord not found"));
 
-                // House — uses Property base fields now
                 House house = new House();
                 house.setLandlord(freshLandlord);
                 house.setPrice(BigDecimal.valueOf(500 + (index * 100L)));
-                house.setDescription("Spacious and comfortable house " + index);
-                house.setAddress(new Address(
-                        "District " + index,
-                        "City " + index,
-                        "Ward " + index,
-                        "Tole " + index
-                ));
+                house.setDescription("Spacious house " + index);
+                house.setAddress(new Address("District " + index, "City " + index, "Ward " + index, "Tole " + index));
                 house.setRules("No smoking, no pets allowed.");
                 house.setAvailable(true);
-                house.setVerified(index % 2 == 0);
+                house.setVerified(true);
                 house.setDeleted(false);
-                // House-specific fields
+
                 house.setFloors(1 + index);
                 house.setBedRooms(2 + index);
                 house.setBathRooms(1 + index);
@@ -174,26 +195,19 @@ public class FindHomeSeeder {
 
                 House savedHouse = houseRepository.save(house);
 
-                // Amenities — single property reference
                 Amenities amenities = Amenities.builder()
                         .property(savedHouse)
-                        .hasParking(index % 2 == 0)
+                        .hasParking(true)
                         .hasWifi(true)
-                        .hasSecurityStaff(index % 3 == 0)
-                        .hasUnderGroundWaterTank(index % 2 != 0)
                         .hasTV(true)
                         .hasCCTV(true)
-                        .hasAC(index % 2 == 0)
                         .hasFridge(true)
-                        .hasBalcony(index % 3 != 0)
                         .hasWater(true)
-                        .hasSolarWaterHeater(true)
                         .hasFan(true)
                         .build();
 
                 amenitiesRepository.save(amenities);
 
-                // Area — single property reference
                 Area area = new Area();
                 area.setProperty(savedHouse);
                 area.setLength(20.0f + index);

@@ -1,6 +1,7 @@
 package com.beta.FindHome.repository;
 
 import com.beta.FindHome.model.OwnerRegistrationStatus;
+import com.beta.FindHome.model.Users;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,4 +15,5 @@ public interface OwnerRegistrationStatusRepository extends JpaRepository<OwnerRe
 
     // Replaces findByUsername() and fetchUserIsVerified()
     Optional<OwnerRegistrationStatus> findByUserUserName(String username);
+    Optional<OwnerRegistrationStatus> findByUser(Users user);
 }

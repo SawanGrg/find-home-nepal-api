@@ -1,5 +1,8 @@
 package com.beta.FindHome.dto.property;
 
+import com.beta.FindHome.dto.common.amenities.AmenitiesDTO;
+import com.beta.FindHome.dto.common.area.AreaDTO;
+import com.beta.FindHome.dto.common.assets.AssetDTO;
 import com.beta.FindHome.model.Amenities;
 import com.beta.FindHome.model.Area;
 import com.beta.FindHome.model.Assets;
@@ -39,13 +42,18 @@ public class GetSpecificPropertyResponseDTO {
     private Integer kitchen;
     private Integer livingRoom;
 
-    // Amenities (common for all entities) - Single object, not a list
-    private Amenities amenities;
+//    // Amenities (common for all entities) - Single object, not a list
+//    private Amenities amenities;
+//
+//    // Area (common for all entities) - Single object, not a list
+//    private Area area;
+//
+//    // Assets (common for all entities)
+//    private List<Assets> assets;
 
-    // Area (common for all entities) - Single object, not a list
-    private Area area;
 
-    // Assets (common for all entities)
-    private List<Assets> assets;
+    private AmenitiesDTO amenities;
+    private AreaDTO area;
+    private List<AssetDTO> assets;
 }
 

@@ -1,5 +1,8 @@
 package com.beta.FindHome.service.property;
 
+import com.beta.FindHome.dto.common.amenities.AmenitiesDTO;
+import com.beta.FindHome.dto.common.area.AreaDTO;
+import com.beta.FindHome.dto.common.assets.AssetDTO;
 import com.beta.FindHome.dto.property.GetAllPropertyResponseDTO;
 import com.beta.FindHome.dto.property.GetSpecificPropertyResponseDTO;
 import com.beta.FindHome.dto.property.PropertyRequestDTO;
@@ -112,7 +115,6 @@ public class PropertyServiceImpl implements PropertyService {
                 redisUtils.get(cacheKey, GetSpecificPropertyResponseDTO.class);
         if (cached != null) return cached;
 
-        // Single JOIN FETCH query — no PropertyLookup needed
         Property property = propertyRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Property not found with ID: " + id));
@@ -123,7 +125,7 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     // =====================================================================
-    // FILTER HELPERS — all use DB-level pagination
+    // FILTER HELPERS
     // =====================================================================
 
     private Page<GetAllPropertyResponseDTO> houseFilter(
@@ -157,7 +159,6 @@ public class PropertyServiceImpl implements PropertyService {
             PropertyRequestDTO dto,
             Pageable pageable
     ) {
-        // Each query uses DB-level LIMIT/OFFSET — no full table load
         List<GetAllPropertyResponseDTO> houses = houseRepository
                 .findAll(SpecificationFilter.houseFilterByCriteria(dto), pageable)
                 .map(this::convertHouseToListDTO)
@@ -231,10 +232,18 @@ public class PropertyServiceImpl implements PropertyService {
         if (property.getAssets() != null) {
             dto.setAssets(property.getAssets().stream()
                     .filter(a -> "IMAGE".equals(a.getAssetType()))
-                    .collect(Collectors.toList()));
+                    .map(a -> new AssetDTO(a.getId(), a.getAssetType(), a.getAssetURL()))
+                    .toList());
         }
-        if (property.getAmenities() != null) dto.setAmenities(property.getAmenities());
-        if (property.getArea() != null) dto.setArea(property.getArea());
+
+        if (property.getAmenities() != null) {
+            dto.setAmenities(toAmenitiesDTO(property.getAmenities()));
+        }
+
+        if (property.getArea() != null) {
+            dto.setArea(toAreaDTO(property.getArea()));
+        }
+
         return dto;
     }
 
@@ -257,7 +266,6 @@ public class PropertyServiceImpl implements PropertyService {
             dto.setKitchen(flat.getKitchen());
             dto.setLivingRoom(flat.getLivingRoom());
         }
-        // Room has no extra fields currently
 
         return dto;
     }
@@ -275,10 +283,54 @@ public class PropertyServiceImpl implements PropertyService {
         dto.setRules(property.getRules());
         dto.setIsAvailable(property.isAvailable());
         dto.setIsVerified(property.isVerified());
-        if (property.getAssets() != null) dto.setAssets(property.getAssets());
-        if (property.getAmenities() != null) dto.setAmenities(property.getAmenities());
-        if (property.getArea() != null) dto.setArea(property.getArea());
+
+        if (property.getAssets() != null) {
+            dto.setAssets(property.getAssets().stream()
+                    .map(a -> new AssetDTO(a.getId(), a.getAssetType(), a.getAssetURL()))
+                    .toList());
+        }
+
+        if (property.getAmenities() != null) {
+            dto.setAmenities(toAmenitiesDTO(property.getAmenities()));
+        }
+
+        if (property.getArea() != null) {
+            dto.setArea(toAreaDTO(property.getArea()));
+        }
+
         return dto;
+    }
+
+    // =====================================================================
+    // PRIVATE MAPPING HELPERS
+    // =====================================================================
+
+    private AmenitiesDTO toAmenitiesDTO(Amenities a) {
+        return new AmenitiesDTO(
+                a.getId(),
+                a.isHasParking(),
+                a.isHasWifi(),
+                a.isHasSecurityStaff(),
+                a.isHasUnderGroundWaterTank(),
+                a.isHasTV(),
+                a.isHasCCTV(),
+                a.isHasAC(),
+                a.isHasFridge(),
+                a.isHasBalcony(),
+                a.isHasWater(),
+                a.isHasSolarWaterHeater(),
+                a.isHasFan(),
+                a.getFurnishingStatus()
+        );
+    }
+
+    private AreaDTO toAreaDTO(Area ar) {
+        return new AreaDTO(
+                ar.getId(),
+                ar.getLength(),
+                ar.getBreadth(),
+                ar.getTotalArea()
+        );
     }
 
     // =====================================================================
