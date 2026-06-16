@@ -1,0 +1,27 @@
+name: CI/CD — Build & Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Run tests (Docker tester stage)
+        run: docker build --target tester -t findhome-test .
+
+      - name: Build runtime image
+        run: docker build --target runtime -t findhome-runtime .
