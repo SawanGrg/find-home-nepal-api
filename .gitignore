@@ -75,3 +75,5 @@ application-dev.yaml
 .env.dev
 .env.prod
 .env
+key.yaml
+DockerFile-old

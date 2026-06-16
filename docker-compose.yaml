@@ -1,31 +1,180 @@
-version: '3.8'
-
 services:
-  find-home:
-    build: .
-    image: find-home-nepal-image
-    container_name: find-home-nepal-container
+
+  # ─────────────────────────────────────────
+  # PostgreSQL
+  # ─────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: findhome-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - findhome-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  # ─────────────────────────────────────────
+  # Redis
+  # ─────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: findhome-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - findhome-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ─────────────────────────────────────────
+  # FindHome Application
+  # ─────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+
+    container_name: findhome-app
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
     ports:
       - "8080:8080"
-    env_file:
-      - .env.dev
+
+    environment:
+
+      # Spring
+      SPRING_APPLICATION_NAME: FindHome
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+
+      # Database
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
+
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: 5
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: 20
+      SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT: 30000
+      SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT: 30000
+      SPRING_DATASOURCE_HIKARI_MAX_LIFETIME: 1800000
+
+      # JPA
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_PROPERTIES_HIBERNATE_FORMAT_SQL: "true"
+
+      # Redis
+      SPRING_DATA_REDIS_HOST: ${SPRING_DATA_REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${SPRING_DATA_REDIS_PORT}
+      SPRING_DATA_REDIS_TIMEOUT: ${SPRING_DATA_REDIS_TIMEOUT}
+
+      REDIS_HOST_KEY: ${REDIS_HOST_KEY}
+      REDIS_PORT_KEY: ${REDIS_PORT_KEY}
+
+      # Flyway
+      SPRING_FLYWAY_ENABLED: "false"
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration
+      SPRING_FLYWAY_BASELINE_VERSION: 0
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+
+      # Multipart
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 300MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 300MB
+
+      # Security
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      ENCRYPTION_SALT_KEY: ${ENCRYPTION_SALT_KEY}
+
+      # SMS
+      MESSAGE_API_TOKEN_KEY: ${MESSAGE_API_TOKEN_KEY}
+      MESSAGE_API_URL_KEY: ${MESSAGE_API_URL_KEY}
+
+      # Storage
+      IMAGE_STORAGE_CHANNEL: ${IMAGE_STORAGE_CHANNEL}
+      VIDEO_DIRECTORY: ${VIDEO_DIRECTORY}
+
+      # Rate Limiter
+      RATE_LIMITER_LIMIT: ${RATE_LIMITER_LIMIT}
+      RATE_LIMITER_TIME_WINDOW: ${RATE_LIMITER_TIME_WINDOW}
+      RATE_LIMITER_BUCKET_TTL: ${RATE_LIMITER_BUCKET_TTL}
+
+      SMS_RATE_LIMITER_LIMIT: ${SMS_RATE_LIMITER_LIMIT}
+      SMS_RATE_LIMITER_TIME_WINDOW: ${SMS_RATE_LIMITER_TIME_WINDOW}
+      SMS_RATE_LIMITER_BUCKET_TTL: ${SMS_RATE_LIMITER_BUCKET_TTL}
+
+      # Resilience4j
+      RESILIENCE4J_RATELIMITER_INSTANCES_FINDHOME_LIMITFORPERIOD: ${RESILIENCE4J_RATELIMITER_INSTANCES_FINDHOME_LIMITFORPERIOD}
+      RESILIENCE4J_RATELIMITER_INSTANCES_FINDHOME_LIMITREFRESHPERIOD: ${RESILIENCE4J_RATELIMITER_INSTANCES_FINDHOME_LIMITREFRESHPERIOD}
+      RESILIENCE4J_RATELIMITER_INSTANCES_FINDHOME_TIMEOUTDURATION: ${RESILIENCE4J_RATELIMITER_INSTANCES_FINDHOME_TIMEOUTDURATION}
+      RESILIENCE4J_RATELIMITER_INSTANCES_FINDHOME_REGISTERHEALTHINDICATOR: ${RESILIENCE4J_RATELIMITER_INSTANCES_FINDHOME_REGISTERHEALTHINDICATOR}
+      RESILIENCE4J_RATELIMITER_INSTANCES_FINDHOME_EVENTCONSUMERBUFFERSIZE: ${RESILIENCE4J_RATELIMITER_INSTANCES_FINDHOME_EVENTCONSUMERBUFFERSIZE}
+
+      # Actuator
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE}
+      MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED: ${MANAGEMENT_PROMETHEUS_METRICS_EXPORT_ENABLED}
+
+      # Logging
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY}
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_WEB}
+      LOGGING_LEVEL_COM_FASTERXML_JACKSON_DATABIND: ${LOGGING_LEVEL_COM_FASTERXML_JACKSON_DATABIND}
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_DATA_REDIS: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_DATA_REDIS}
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_CACHE: ${LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_CACHE}
+      LOGGING_LEVEL_ORG_FLYWAYDB: ${LOGGING_LEVEL_ORG_FLYWAYDB}
+      LOGGING_LEVEL_COM_BETA_FINDHOME_FILTER_RATELIMITERFILTER: ${LOGGING_LEVEL_COM_BETA_FINDHOME_FILTER_RATELIMITERFILTER}
+
+      # OpenAPI
+      API_INFO_TITLE: ${API_INFO_TITLE}
+      API_INFO_VERSION: ${API_INFO_VERSION}
+      API_INFO_DESCRIPTION: ${API_INFO_DESCRIPTION}
+      API_INFO_CONTACT_NAME: ${API_INFO_CONTACT_NAME}
+      API_INFO_CONTACT_EMAIL: ${API_INFO_CONTACT_EMAIL}
+      API_INFO_LICENSE_NAME: ${API_INFO_LICENSE_NAME}
+      API_INFO_LICENSE_URL: ${API_INFO_LICENSE_URL}
+
     volumes:
-      # Mount certificates and keys from host machine read-only
+      - ./uploads:/app/uploads
       - ./certs:/app/certs:ro
-      - ./logs:/app/logs:ro
 
+    networks:
+      - findhome-net
 
-      # For file uploads and other persistent data
-      - ./uploads:/app/uploads:ro
-#    environment:
-#      - SPRING_PROFILES_ACTIVE=dev
-#      - DB_HOST=${DB_HOST:-host.docker.internal}
-##      - REDIS_HOST=${REDIS_HOST:-host.docker.internal}
-    extra_hosts:
-      - "host.docker.internal:host-gateway" # Required for Linux to access host services
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-    restart: unless-stopped
+      start_period: 60s
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  findhome-net:
+    driver: bridge
