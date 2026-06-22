@@ -176,7 +176,10 @@ public class LoginRegisterUserController {
     public ResponseEntity<LoginResponseDTO> authenticate(
             @Valid @RequestBody LoginRequestDTO request
     ) {
+
         String token = userService.authenticateUser(request);
+        log.info("Username received: '{}'", request.getUsername());
+        log.info("Username received: '{}'", request.getPassword());
         String username = userService.getUserByUsername(request.getUsername());
         LoginResponseDTO response = new LoginResponseDTO(
                 "Login successful",
