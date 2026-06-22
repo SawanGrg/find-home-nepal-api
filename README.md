@@ -67,7 +67,7 @@ docker-compose up -d
 
 ##  Live Demo
 
- **Live Application:** https://www.findhomenepal.com/
+ **Live Application:** https://www.findhomesnepal.com/
 
 Experience the platform in action:
 -  Search and filter properties in real-time
